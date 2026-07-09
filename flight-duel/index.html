@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>双翼连线 飞行器对战</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2309131f'/%3E%3Cpath d='M32 8 52 50 32 40 12 50z' fill='%236ee7ff'/%3E%3Cpath d='M32 8v32' stroke='%23ffce6e' stroke-width='5'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/believe1534892246/miaomiaomiao-cat-game@a9111d53dc8d3feee78e9545761884caa67c325f/sky-link-duel/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="arena" aria-label="双人连线飞行器游戏画布"></canvas>
+
+      <header class="hud topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>双翼连线</h1>
+            <p>两人实时飞行器对战</p>
+          </div>
+        </div>
+        <div class="status">
+          <span id="netState">未连接</span>
+          <strong id="roomBadge">----</strong>
+        </div>
+      </header>
+
+      <section class="hud lobby" id="lobby" aria-label="联机房间">
+        <div class="lobby-actions">
+          <button type="button" id="hostBtn">
+            <span>创建房间</span>
+          </button>
+          <div class="join-row">
+            <input id="roomInput" maxlength="4" inputmode="latin" autocomplete="off" placeholder="房间码" />
+            <button type="button" id="joinBtn">
+              <span>加入</span>
+            </button>
+          </div>
+        </div>
+        <div class="room-card" id="roomCard" hidden>
+          <span>发送给朋友</span>
+          <strong id="roomCode">----</strong>
+          <button type="button" id="copyBtn">复制链接</button>
+        </div>
+      </section>
+
+      <section class="hud scorebar" aria-label="双方状态">
+        <div>
+          <span>你</span>
+          <strong id="localHp">100</strong>
+        </div>
+        <div>
+          <span>对手</span>
+          <strong id="remoteHp">--</strong>
+        </div>
+        <div>
+          <span>命中</span>
+          <strong id="hitCount">0</strong>
+        </div>
+        <div>
+          <span>延迟</span>
+          <strong id="pingValue">--</strong>
+        </div>
+      </section>
+
+      <section class="hud notice" id="notice">
+        <strong>准备起飞</strong>
+        <span>创建房间或输入朋友的房间码</span>
+      </section>
+
+      <nav class="touch-controls" aria-label="移动端控制">
+        <div class="pad">
+          <button type="button" data-key="left">左</button>
+          <button type="button" data-key="thrust">推</button>
+          <button type="button" data-key="right">右</button>
+        </div>
+        <button type="button" class="fire" data-key="fire">发射</button>
+      </nav>
+    </main>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/believe1534892246/miaomiaomiao-cat-game@a9111d53dc8d3feee78e9545761884caa67c325f/sky-link-duel/app-v2.js"></script>
+  </body>
+</html>

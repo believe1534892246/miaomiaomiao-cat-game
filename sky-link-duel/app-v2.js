@@ -1,0 +1,597 @@
+const canvas = document.querySelector("#arena");
+const context = canvas.getContext("2d");
+
+const ui = {
+  netState: document.querySelector("#netState"),
+  roomBadge: document.querySelector("#roomBadge"),
+  lobby: document.querySelector("#lobby"),
+  hostBtn: document.querySelector("#hostBtn"),
+  joinBtn: document.querySelector("#joinBtn"),
+  roomInput: document.querySelector("#roomInput"),
+  roomCard: document.querySelector("#roomCard"),
+  roomCode: document.querySelector("#roomCode"),
+  copyBtn: document.querySelector("#copyBtn"),
+  notice: document.querySelector("#notice"),
+  localHp: document.querySelector("#localHp"),
+  remoteHp: document.querySelector("#remoteHp"),
+  hitCount: document.querySelector("#hitCount"),
+  pingValue: document.querySelector("#pingValue"),
+};
+
+const world = { width: 1800, height: 1200 };
+const keys = { left: false, right: false, thrust: false, fire: false };
+const stars = Array.from({ length: 180 }, () => ({
+  x: Math.random() * world.width,
+  y: Math.random() * world.height,
+  r: 0.5 + Math.random() * 1.6,
+  a: 0.28 + Math.random() * 0.7,
+}));
+
+let width = 0;
+let height = 0;
+let dpr = 1;
+let peer = null;
+let connection = null;
+let room = "";
+let role = "solo";
+let lastTime = performance.now();
+let lastSend = 0;
+let lastShot = 0;
+let lastPing = 0;
+let ping = "--";
+let camera = { x: world.width / 2, y: world.height / 2 };
+let connectedAt = 0;
+let nextBulletId = 1;
+let hits = 0;
+let incomingHitMemory = new Set();
+let explosions = [];
+
+const local = makeShip("你", "#6ee7ff", world.width * 0.36, world.height * 0.52, -Math.PI / 2);
+let remote = null;
+
+function makeShip(name, color, x, y, angle) {
+  return {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2),
+    name,
+    color,
+    x,
+    y,
+    vx: 0,
+    vy: 0,
+    angle,
+    hp: 100,
+    score: 0,
+    bullets: [],
+    alive: true,
+    respawnAt: 0,
+  };
+}
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function randomRoom() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 4; i += 1) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return code;
+}
+
+function setNotice(title, text) {
+  ui.notice.querySelector("strong").textContent = title;
+  ui.notice.querySelector("span").textContent = text;
+}
+
+function setNetworkState(label, code = room || "----") {
+  ui.netState.textContent = label;
+  ui.roomBadge.textContent = code;
+}
+
+function peerOptions() {
+  return {
+    host: "0.peerjs.com",
+    port: 443,
+    path: "/",
+    secure: true,
+    debug: 0,
+    config: {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:global.stun.twilio.com:3478" },
+      ],
+    },
+  };
+}
+
+function destroyConnection() {
+  if (connection) connection.close();
+  if (peer) peer.destroy();
+  connection = null;
+  peer = null;
+}
+
+function createHost() {
+  destroyConnection();
+  room = randomRoom();
+  role = "host";
+  local.color = "#6ee7ff";
+  local.x = world.width * 0.35;
+  local.y = world.height * 0.5;
+  local.angle = 0;
+  local.hp = 100;
+  local.bullets = [];
+  setNetworkState("创建中", room);
+  showRoom(room);
+
+  peer = new Peer(`skyduel-${room.toLowerCase()}`, peerOptions());
+  peer.on("open", () => {
+    setNetworkState("等待对手", room);
+    setNotice("房间已创建", `把房间码 ${room} 发给朋友`);
+  });
+  peer.on("connection", (conn) => {
+    if (connection) connection.close();
+    setupConnection(conn);
+  });
+  peer.on("error", (error) => {
+    setNetworkState("连接失败", room);
+    setNotice("房间创建失败", error.type === "unavailable-id" ? "房间码被占用，请重新创建" : "网络连接失败，请重试");
+  });
+}
+
+function joinRoom(code) {
+  const clean = code.trim().toUpperCase();
+  if (clean.length !== 4) {
+    setNotice("房间码不完整", "请输入朋友给你的 4 位房间码");
+    return;
+  }
+  destroyConnection();
+  room = clean;
+  role = "guest";
+  local.color = "#ff6961";
+  local.x = world.width * 0.65;
+  local.y = world.height * 0.5;
+  local.angle = Math.PI;
+  local.hp = 100;
+  local.bullets = [];
+  setNetworkState("加入中", room);
+  showRoom(room);
+
+  peer = new Peer(null, peerOptions());
+  peer.on("open", () => {
+    const conn = peer.connect(`skyduel-${room.toLowerCase()}`, { reliable: false });
+    setupConnection(conn);
+  });
+  peer.on("error", () => {
+    setNetworkState("连接失败", room);
+    setNotice("加入失败", "请确认房主已经创建房间，并且房间码正确");
+  });
+}
+
+function setupConnection(conn) {
+  connection = conn;
+  connection.on("open", () => {
+    connectedAt = performance.now();
+    setNetworkState("已连接", room);
+    setNotice("连线成功", "WASD/方向键飞行，空格或发射键开火");
+    ui.lobby.hidden = true;
+    send({ type: "hello", role, color: local.color });
+  });
+  connection.on("data", handleMessage);
+  connection.on("close", () => {
+    setNetworkState("已断开", room);
+    setNotice("对手已离开", "重新创建房间或加入新房间");
+    ui.lobby.hidden = false;
+    remote = null;
+  });
+  connection.on("error", () => {
+    setNetworkState("连接错误", room);
+    setNotice("连接中断", "可以刷新后重新创建房间");
+  });
+}
+
+function send(message) {
+  if (connection && connection.open) connection.send(message);
+}
+
+function handleMessage(message) {
+  if (!message || typeof message !== "object") return;
+  if (message.type === "hello") {
+    if (!remote) remote = makeShip("对手", message.color || "#ff6961", world.width * 0.65, world.height * 0.5, Math.PI);
+  }
+  if (message.type === "state") {
+    const state = message.state;
+    if (!remote) remote = makeShip("对手", state.color || "#ff6961", state.x, state.y, state.angle);
+    Object.assign(remote, state);
+  }
+  if (message.type === "hitAck") {
+    hits += 1;
+    local.score = hits;
+  }
+  if (message.type === "ping") send({ type: "pong", t: message.t });
+  if (message.type === "pong") ping = `${Math.max(1, Math.round(performance.now() - message.t))}ms`;
+}
+
+function showRoom(code) {
+  ui.roomCard.hidden = false;
+  ui.roomCode.textContent = code;
+  ui.roomInput.value = code;
+  const url = new URL(location.href);
+  url.searchParams.set("room", code);
+  history.replaceState(null, "", url);
+}
+
+function copyInvite() {
+  const url = new URL(location.href);
+  url.searchParams.set("room", room);
+  navigator.clipboard?.writeText(url.href);
+  setNotice("链接已复制", "把链接发给朋友，对方打开后点击加入");
+}
+
+function resetLocalShip() {
+  local.hp = 100;
+  local.alive = true;
+  local.bullets = [];
+  local.x = role === "guest" ? world.width * 0.66 : world.width * 0.34;
+  local.y = world.height * (0.4 + Math.random() * 0.2);
+  local.vx = 0;
+  local.vy = 0;
+  local.angle = role === "guest" ? Math.PI : 0;
+}
+
+function fire() {
+  const now = performance.now();
+  if (!local.alive || now - lastShot < 210) return;
+  lastShot = now;
+  const speed = 720;
+  local.bullets.push({
+    id: `${local.id}-${nextBulletId++}`,
+    x: local.x + Math.cos(local.angle) * 30,
+    y: local.y + Math.sin(local.angle) * 30,
+    vx: local.vx + Math.cos(local.angle) * speed,
+    vy: local.vy + Math.sin(local.angle) * speed,
+    life: 1.05,
+  });
+}
+
+function damageLocal(amount, bulletId) {
+  if (!local.alive || incomingHitMemory.has(bulletId)) return;
+  incomingHitMemory.add(bulletId);
+  local.hp = Math.max(0, local.hp - amount);
+  explosions.push({ x: local.x, y: local.y, t: 0, color: "#ffce6e" });
+  send({ type: "hitAck", bulletId });
+  if (local.hp <= 0) {
+    local.alive = false;
+    local.respawnAt = performance.now() + 1800;
+    explosions.push({ x: local.x, y: local.y, t: 0, color: local.color, big: true });
+  }
+}
+
+function update(dt) {
+  if (!local.alive) {
+    local.vx *= 0.94;
+    local.vy *= 0.94;
+    if (performance.now() > local.respawnAt) resetLocalShip();
+  } else {
+    const turn = 3.55;
+    const thrust = keys.thrust ? 560 : 90;
+    if (keys.left) local.angle -= turn * dt;
+    if (keys.right) local.angle += turn * dt;
+    if (keys.thrust) {
+      local.vx += Math.cos(local.angle) * thrust * dt;
+      local.vy += Math.sin(local.angle) * thrust * dt;
+    }
+    if (keys.fire) fire();
+    local.vx *= 0.992;
+    local.vy *= 0.992;
+    const maxSpeed = 430;
+    const speed = Math.hypot(local.vx, local.vy);
+    if (speed > maxSpeed) {
+      local.vx = (local.vx / speed) * maxSpeed;
+      local.vy = (local.vy / speed) * maxSpeed;
+    }
+  }
+
+  local.x = clamp(local.x + local.vx * dt, 36, world.width - 36);
+  local.y = clamp(local.y + local.vy * dt, 36, world.height - 36);
+  local.bullets.forEach((bullet) => {
+    bullet.x += bullet.vx * dt;
+    bullet.y += bullet.vy * dt;
+    bullet.life -= dt;
+  });
+  local.bullets = local.bullets.filter((bullet) => bullet.life > 0 && inWorld(bullet.x, bullet.y));
+
+  if (remote?.bullets?.length && local.alive) {
+    remote.bullets.forEach((bullet) => {
+      if (Math.hypot(bullet.x - local.x, bullet.y - local.y) < 34) damageLocal(12, bullet.id);
+    });
+  }
+
+  explosions.forEach((burst) => {
+    burst.t += dt;
+  });
+  explosions = explosions.filter((burst) => burst.t < (burst.big ? 0.8 : 0.42));
+
+  const targetCamera = remote
+    ? { x: (local.x + remote.x) / 2, y: (local.y + remote.y) / 2 }
+    : { x: local.x, y: local.y };
+  camera.x += (targetCamera.x - camera.x) * Math.min(1, dt * 2.4);
+  camera.y += (targetCamera.y - camera.y) * Math.min(1, dt * 2.4);
+
+  if (connection?.open && performance.now() - lastSend > 55) {
+    lastSend = performance.now();
+    send({
+      type: "state",
+      state: {
+        id: local.id,
+        color: local.color,
+        x: local.x,
+        y: local.y,
+        vx: local.vx,
+        vy: local.vy,
+        angle: local.angle,
+        hp: local.hp,
+        score: local.score,
+        alive: local.alive,
+        bullets: local.bullets,
+      },
+    });
+  }
+
+  if (connection?.open && performance.now() - lastPing > 1400) {
+    lastPing = performance.now();
+    send({ type: "ping", t: lastPing });
+  }
+}
+
+function render() {
+  context.clearRect(0, 0, width, height);
+  const zoom = width < 760 ? 0.62 : 0.78;
+  context.save();
+  context.translate(width / 2, height / 2);
+  context.scale(zoom, zoom);
+  context.translate(-camera.x, -camera.y);
+  drawWorld();
+  if (remote) drawShip(remote, false);
+  drawShip(local, true);
+  drawBullets(local.bullets, local.color);
+  if (remote?.bullets) drawBullets(remote.bullets, remote.color || "#ff6961");
+  explosions.forEach(drawExplosion);
+  context.restore();
+
+  if (!connection?.open) {
+    drawCenterText("创建房间或输入房间码", "两台设备打开同一链接即可连线");
+  } else if (!remote) {
+    drawCenterText("等待对手进入房间", `房间码 ${room}`);
+  } else if (!local.alive) {
+    drawCenterText("飞行器重组中", "马上复活");
+  }
+}
+
+function drawWorld() {
+  context.fillStyle = "#050914";
+  context.fillRect(0, 0, world.width, world.height);
+
+  stars.forEach((star) => {
+    context.globalAlpha = star.a;
+    context.fillStyle = "#dff8ff";
+    context.beginPath();
+    context.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+    context.fill();
+  });
+  context.globalAlpha = 1;
+
+  context.strokeStyle = "rgba(110, 231, 255, 0.08)";
+  context.lineWidth = 1;
+  for (let x = 0; x <= world.width; x += 120) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, world.height);
+    context.stroke();
+  }
+  for (let y = 0; y <= world.height; y += 120) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(world.width, y);
+    context.stroke();
+  }
+
+  context.strokeStyle = "rgba(255, 206, 110, 0.28)";
+  context.lineWidth = 4;
+  context.strokeRect(18, 18, world.width - 36, world.height - 36);
+}
+
+function drawShip(ship, isLocal) {
+  context.save();
+  context.translate(ship.x, ship.y);
+  context.rotate(ship.angle);
+  context.globalAlpha = ship.alive ? 1 : 0.38;
+
+  if (isLocal && keys.thrust && ship.alive) {
+    const flame = context.createLinearGradient(-54, 0, -20, 0);
+    flame.addColorStop(0, "rgba(110, 231, 255, 0)");
+    flame.addColorStop(1, "rgba(110, 231, 255, 0.9)");
+    context.fillStyle = flame;
+    context.beginPath();
+    context.moveTo(-58, 0);
+    context.lineTo(-18, -11);
+    context.lineTo(-24, 0);
+    context.lineTo(-18, 11);
+    context.closePath();
+    context.fill();
+  }
+
+  context.shadowColor = ship.color;
+  context.shadowBlur = 18;
+  context.fillStyle = ship.color;
+  context.beginPath();
+  context.moveTo(34, 0);
+  context.lineTo(-24, -21);
+  context.lineTo(-10, 0);
+  context.lineTo(-24, 21);
+  context.closePath();
+  context.fill();
+
+  context.shadowBlur = 0;
+  context.fillStyle = isLocal ? "#eefcff" : "#1a1012";
+  context.beginPath();
+  context.moveTo(21, 0);
+  context.lineTo(-8, -9);
+  context.lineTo(-2, 0);
+  context.lineTo(-8, 9);
+  context.closePath();
+  context.fill();
+
+  context.strokeStyle = isLocal ? "#ffffff" : "#ffd2cd";
+  context.lineWidth = 2;
+  context.stroke();
+  context.restore();
+
+  context.save();
+  context.translate(ship.x, ship.y - 44);
+  context.fillStyle = "rgba(0,0,0,0.45)";
+  context.fillRect(-38, -5, 76, 7);
+  context.fillStyle = ship.hp > 35 ? "#8fff9a" : "#ff6961";
+  context.fillRect(-38, -5, 76 * Math.max(0, ship.hp) / 100, 7);
+  context.restore();
+}
+
+function drawBullets(bullets, color) {
+  context.fillStyle = color;
+  context.shadowColor = color;
+  context.shadowBlur = 16;
+  bullets.forEach((bullet) => {
+    context.beginPath();
+    context.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+    context.fill();
+  });
+  context.shadowBlur = 0;
+}
+
+function drawExplosion(burst) {
+  const ratio = burst.t / (burst.big ? 0.8 : 0.42);
+  const radius = (burst.big ? 90 : 42) * ratio;
+  context.save();
+  context.globalAlpha = 1 - ratio;
+  context.strokeStyle = burst.color;
+  context.lineWidth = 5;
+  context.beginPath();
+  context.arc(burst.x, burst.y, radius, 0, Math.PI * 2);
+  context.stroke();
+  context.fillStyle = burst.color;
+  context.beginPath();
+  context.arc(burst.x, burst.y, radius * 0.24, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawCenterText(title, subtitle) {
+  context.save();
+  context.textAlign = "center";
+  context.fillStyle = "rgba(246, 251, 255, 0.92)";
+  context.font = "700 24px system-ui, sans-serif";
+  context.fillText(title, width / 2, height / 2 - 10);
+  context.fillStyle = "rgba(159, 176, 193, 0.88)";
+  context.font = "14px system-ui, sans-serif";
+  context.fillText(subtitle, width / 2, height / 2 + 20);
+  context.restore();
+}
+
+function updateUi() {
+  ui.localHp.textContent = String(Math.round(local.hp));
+  ui.remoteHp.textContent = remote ? String(Math.round(remote.hp)) : "--";
+  ui.hitCount.textContent = String(hits);
+  ui.pingValue.textContent = ping;
+  if (connection?.open && remote && performance.now() - connectedAt > 1200) ui.lobby.hidden = true;
+}
+
+function frame(time) {
+  const dt = Math.min(0.04, (time - lastTime) / 1000);
+  lastTime = time;
+  update(dt);
+  render();
+  updateUi();
+  requestAnimationFrame(frame);
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function inWorld(x, y) {
+  return x > 0 && x < world.width && y > 0 && y < world.height;
+}
+
+function bindControls() {
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") keys.left = true;
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") keys.right = true;
+    if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") keys.thrust = true;
+    if (event.code === "Space" || event.key.toLowerCase() === "j") keys.fire = true;
+  });
+  window.addEventListener("keyup", (event) => {
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") keys.left = false;
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") keys.right = false;
+    if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") keys.thrust = false;
+    if (event.code === "Space" || event.key.toLowerCase() === "j") keys.fire = false;
+  });
+
+  document.querySelectorAll("[data-key]").forEach((button) => {
+    const key = button.dataset.key;
+    const press = (event) => {
+      event.preventDefault();
+      keys[key] = true;
+      button.classList.add("active");
+      try {
+        if (event.pointerId !== undefined) button.setPointerCapture?.(event.pointerId);
+      } catch {
+        // Synthetic test events do not own an active pointer.
+      }
+    };
+    const release = (event) => {
+      event.preventDefault();
+      keys[key] = false;
+      button.classList.remove("active");
+    };
+    button.addEventListener("pointerdown", press);
+    button.addEventListener("pointerup", release);
+    button.addEventListener("pointercancel", release);
+    button.addEventListener("pointerleave", release);
+  });
+
+  ui.hostBtn.addEventListener("click", createHost);
+  ui.joinBtn.addEventListener("click", () => joinRoom(ui.roomInput.value));
+  ui.copyBtn.addEventListener("click", copyInvite);
+  ui.roomInput.addEventListener("input", () => {
+    ui.roomInput.value = ui.roomInput.value.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  });
+  ui.roomInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") joinRoom(ui.roomInput.value);
+  });
+  window.addEventListener("resize", resize);
+}
+
+function boot() {
+  resize();
+  bindControls();
+  const url = new URL(location.href);
+  const invite = url.searchParams.get("room");
+  if (invite) {
+    ui.roomInput.value = invite.toUpperCase().slice(0, 4);
+    setNotice("检测到房间码", "点击加入即可进入朋友的房间");
+  }
+  if (!window.Peer) {
+    setNetworkState("联机库加载失败");
+    setNotice("网络库未加载", "请刷新页面，或检查网络是否能访问 unpkg.com");
+  }
+  requestAnimationFrame(frame);
+}
+
+boot();

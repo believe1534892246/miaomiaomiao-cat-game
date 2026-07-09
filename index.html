@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>喵喵喵</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <svg class="defs" aria-hidden="true">
+      <symbol id="icon-bowl" viewBox="0 0 24 24">
+        <path d="M5 11h14l-1.1 4.4A5 5 0 0 1 13 19h-2a5 5 0 0 1-4.9-3.6L5 11Z" />
+        <path d="M4 11h16" />
+        <path d="M8 8c.7-.8 1.6-1 2.4-.7" />
+        <path d="M13.4 7.3c.8-.3 1.7-.1 2.4.7" />
+      </symbol>
+      <symbol id="icon-sparkle" viewBox="0 0 24 24">
+        <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z" />
+        <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z" />
+      </symbol>
+      <symbol id="icon-shower" viewBox="0 0 24 24">
+        <path d="M7 9a5 5 0 0 1 10 0H7Z" />
+        <path d="M12 4V2" />
+        <path d="M8 14v.1" />
+        <path d="M12 14v.1" />
+        <path d="M16 14v.1" />
+        <path d="M9 18v.1" />
+        <path d="M15 18v.1" />
+      </symbol>
+      <symbol id="icon-heart" viewBox="0 0 24 24">
+        <path d="M20.3 6.3a4.6 4.6 0 0 0-6.5 0L12 8.1l-1.8-1.8a4.6 4.6 0 1 0-6.5 6.5L12 21l8.3-8.2a4.6 4.6 0 0 0 0-6.5Z" />
+      </symbol>
+      <symbol id="icon-game" viewBox="0 0 24 24">
+        <path d="M7.5 10.5h9A4.5 4.5 0 0 1 21 15v.2a3.3 3.3 0 0 1-5.7 2.3L14 16h-4l-1.3 1.5A3.3 3.3 0 0 1 3 15.2V15a4.5 4.5 0 0 1 4.5-4.5Z" />
+        <path d="M8 13v3" />
+        <path d="M6.5 14.5h3" />
+        <path d="M15.5 14.5h.1" />
+        <path d="M18 13.5h.1" />
+      </symbol>
+      <symbol id="icon-rocket" viewBox="0 0 24 24">
+        <path d="M13 4c3.8.4 6.6 3.2 7 7l-5.4 5.4-4.4-4.4L13 4Z" />
+        <path d="M9.5 12.5 6 13l-2 4 4-.8.5-3.7" />
+        <path d="M11.5 14.5 11 18l-4 2 .8-4" />
+        <path d="M15 9h.1" />
+      </symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24">
+        <path d="M20 15.3A8.4 8.4 0 0 1 8.7 4 8.5 8.5 0 1 0 20 15.3Z" />
+      </symbol>
+      <symbol id="icon-book" viewBox="0 0 24 24">
+        <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H20v17H8.5A3.5 3.5 0 0 0 5 22V5.5Z" />
+        <path d="M5 5.5A3.5 3.5 0 0 0 8.5 9H20" />
+      </symbol>
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="M4 11.5 12 4l8 7.5" />
+        <path d="M6.5 10.5V20h11v-9.5" />
+        <path d="M10 20v-5h4v5" />
+      </symbol>
+      <symbol id="icon-leaf" viewBox="0 0 24 24">
+        <path d="M20 4c-7.7.2-12 4.2-12 9a5 5 0 0 0 5 5c4.8 0 8.8-4.3 9-12 0-1.1-.9-2-2-2Z" />
+        <path d="M4 20c3.5-5.5 8-8 14-10" />
+      </symbol>
+      <symbol id="icon-reset" viewBox="0 0 24 24">
+        <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+        <path d="M4 5v5h5" />
+      </symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24">
+        <path d="M6 6l12 12" />
+        <path d="M18 6 6 18" />
+      </symbol>
+    </svg>
+
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span>
+          </div>
+          <div>
+            <h1>喵喵喵</h1>
+            <p id="petSubtitle">浅灰小猫 · 幼崽期</p>
+          </div>
+        </div>
+        <div class="top-stats">
+          <div class="chip">
+            <span>星贝</span>
+            <strong id="shells">0</strong>
+          </div>
+          <div class="chip">
+            <span>日记</span>
+            <strong id="memoryCount">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="game-grid">
+        <section class="play-surface" aria-label="喵喵喵游戏区">
+          <div class="room-scene" id="roomScene">
+            <div class="window">
+              <span></span>
+              <span></span>
+            </div>
+            <div class="shelf">
+              <i></i>
+              <i></i>
+              <i></i>
+            </div>
+            <div class="floor-grid"></div>
+            <div class="decor decor-telescope" aria-hidden="true"></div>
+            <div class="decor decor-music" aria-hidden="true"></div>
+            <div class="decor decor-pillow" aria-hidden="true"></div>
+            <div class="toy-ball" aria-hidden="true"></div>
+            <div class="food-bowl" aria-hidden="true"></div>
+
+            <div class="speech" id="speech">喵。</div>
+
+            <button class="pet-button" id="petButton" type="button" aria-label="摸摸小灰" title="摸摸小灰">
+              <svg class="cat" id="catSvg" viewBox="0 0 260 250" role="img" aria-label="浅灰色小猫小灰">
+                <g class="tail">
+                  <path d="M183 154c47-3 49-56 19-56-20 0-23 31-2 32" />
+                </g>
+                <g class="body">
+                  <ellipse cx="130" cy="157" rx="57" ry="50" />
+                  <path class="belly" d="M96 157c7 23 22 36 35 36 15 0 29-13 35-36-14 10-55 10-70 0Z" />
+                  <path class="paw paw-left" d="M93 187c-9 9-5 20 8 20h25c-9-9-19-16-33-20Z" />
+                  <path class="paw paw-right" d="M167 187c9 9 5 20-8 20h-25c9-9 19-16 33-20Z" />
+                </g>
+                <g class="head">
+                  <path class="ear ear-left" d="M78 91 92 42l34 36Z" />
+                  <path class="ear ear-right" d="M182 91 168 42l-34 36Z" />
+                  <path class="inner-ear ear-left" d="M91 76 97 56l15 16Z" />
+                  <path class="inner-ear ear-right" d="M169 76l-6-20-15 16Z" />
+                  <ellipse cx="130" cy="100" rx="63" ry="55" />
+                  <g class="face">
+                    <path class="eye eye-left" d="M104 97c4-6 13-6 17 0" />
+                    <path class="eye eye-right" d="M139 97c4-6 13-6 17 0" />
+                    <path class="nose" d="M124 114c3-4 9-4 12 0-2 5-10 5-12 0Z" />
+                    <path class="mouth" d="M130 119c-2 7-8 9-13 5" />
+                    <path class="mouth" d="M130 119c2 7 8 9 13 5" />
+                    <path class="whisker" d="M90 116H63" />
+                    <path class="whisker" d="M92 126l-25 8" />
+                    <path class="whisker" d="M170 116h27" />
+                    <path class="whisker" d="M168 126l25 8" />
+                  </g>
+                  <g class="star-collar">
+                    <path d="M94 142c19 13 53 13 72 0" />
+                    <path class="tag" d="M130 146l4 7 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1 4-7Z" />
+                  </g>
+                </g>
+              </svg>
+            </button>
+          </div>
+
+          <div class="status-grid" aria-label="小灰状态">
+            <div class="stat-tile">
+              <div class="stat-head">
+                <span>饱腹</span>
+                <strong id="hungerValue">0</strong>
+              </div>
+              <div class="meter"><span id="hungerFill"></span></div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-head">
+                <span>清洁</span>
+                <strong id="cleanValue">0</strong>
+              </div>
+              <div class="meter"><span id="cleanFill"></span></div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-head">
+                <span>心情</span>
+                <strong id="moodValue">0</strong>
+              </div>
+              <div class="meter"><span id="moodFill"></span></div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-head">
+                <span>体力</span>
+                <strong id="energyValue">0</strong>
+              </div>
+              <div class="meter"><span id="energyFill"></span></div>
+            </div>
+          </div>
+
+          <div class="action-grid" aria-label="互动操作">
+            <button type="button" data-action="feed" title="喂食">
+              <svg><use href="#icon-bowl"></use></svg>
+              <span>喂食</span>
+            </button>
+            <button type="button" data-action="clean" title="洗澡">
+              <svg><use href="#icon-shower"></use></svg>
+              <span>洗澡</span>
+            </button>
+            <button type="button" data-action="pat" title="摸摸">
+              <svg><use href="#icon-heart"></use></svg>
+              <span>摸摸</span>
+            </button>
+            <button type="button" data-action="play" title="接星星">
+              <svg><use href="#icon-game"></use></svg>
+              <span>接星星</span>
+            </button>
+            <button type="button" data-action="explore" title="探索">
+              <svg><use href="#icon-rocket"></use></svg>
+              <span>探索</span>
+            </button>
+            <button type="button" data-action="sleep" title="睡觉">
+              <svg><use href="#icon-moon"></use></svg>
+              <span>睡觉</span>
+            </button>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <nav class="tabs" aria-label="游戏面板">
+            <button class="active" type="button" data-tab="room">
+              <svg><use href="#icon-home"></use></svg>
+              <span>房间</span>
+            </button>
+            <button type="button" data-tab="album">
+              <svg><use href="#icon-book"></use></svg>
+              <span>相册</span>
+            </button>
+            <button type="button" data-tab="growth">
+              <svg><use href="#icon-leaf"></use></svg>
+              <span>成长</span>
+            </button>
+          </nav>
+
+          <section class="panel-section active" data-panel="room">
+            <div class="section-title">
+              <h2>小窝</h2>
+              <p id="roomMood">安静又亮堂</p>
+            </div>
+            <div class="decor-list">
+              <button type="button" data-decor="telescope">
+                <span class="decor-dot telescope"></span>
+                <span>望远镜</span>
+              </button>
+              <button type="button" data-decor="music">
+                <span class="decor-dot music"></span>
+                <span>音乐盒</span>
+              </button>
+              <button type="button" data-decor="pillow">
+                <span class="decor-dot pillow"></span>
+                <span>云朵垫</span>
+              </button>
+            </div>
+            <div class="mini-log" id="miniLog"></div>
+          </section>
+
+          <section class="panel-section" data-panel="album" hidden>
+            <div class="section-title">
+              <h2>记忆相册</h2>
+              <p id="albumSubtitle">新的小事会留在这里</p>
+            </div>
+            <div class="album-list" id="albumList"></div>
+          </section>
+
+          <section class="panel-section" data-panel="growth" hidden>
+            <div class="section-title">
+              <h2>成长记录</h2>
+              <p id="growthSubtitle">幼崽期</p>
+            </div>
+            <div class="growth-lines">
+              <div>
+                <span>亲密度</span>
+                <strong id="bondValue">0</strong>
+              </div>
+              <div>
+                <span>好奇心</span>
+                <strong id="curiosityValue">0</strong>
+              </div>
+              <div>
+                <span>性格倾向</span>
+                <strong id="traitValue">黏人</strong>
+              </div>
+            </div>
+            <button class="reset-button" id="resetButton" type="button">
+              <svg><use href="#icon-reset"></use></svg>
+              <span>重新开始</span>
+            </button>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div class="mini-game" id="miniGame" hidden>
+      <div class="mini-card" role="dialog" aria-modal="true" aria-label="接星星">
+        <div class="mini-head">
+          <div>
+            <h2>接星星</h2>
+            <p id="miniStatus">准备</p>
+          </div>
+          <button class="icon-button" id="closeMini" type="button" aria-label="关闭">
+            <svg><use href="#icon-x"></use></svg>
+          </button>
+        </div>
+        <canvas id="starCanvas" width="720" height="420"></canvas>
+        <div class="mini-footer">
+          <div class="score-pill">
+            <span>分数</span>
+            <strong id="miniScore">0</strong>
+          </div>
+          <div class="score-pill">
+            <span>时间</span>
+            <strong id="miniTime">20</strong>
+          </div>
+          <button id="startMini" type="button">
+            <svg><use href="#icon-sparkle"></use></svg>
+            <span>开始</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

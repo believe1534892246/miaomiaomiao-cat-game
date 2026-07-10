@@ -1,0 +1,408 @@
+:root {
+  color-scheme: dark;
+  --ink: #f7f8fb;
+  --muted: #aab4c2;
+  --panel: rgba(8, 11, 17, 0.76);
+  --panel-strong: rgba(7, 9, 14, 0.92);
+  --line: rgba(226, 232, 240, 0.2);
+  --red: #c83227;
+  --blue: #1458c8;
+  --chrome: #d7dde5;
+  --cyan: #69e9ff;
+  --amber: #f4b34f;
+  --shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 24% 26%, rgba(200, 50, 39, 0.16), transparent 30%),
+    radial-gradient(circle at 78% 62%, rgba(20, 88, 200, 0.2), transparent 32%),
+    linear-gradient(135deg, #05070b, #111827 48%, #090b10);
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  position: relative;
+  isolation: isolate;
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+#scene:active {
+  cursor: grabbing;
+}
+
+.hud {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.top-hud {
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 74px;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+
+.brand-mark {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(215, 221, 229, 0.55);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, var(--red) 0 46%, var(--blue) 46% 100%),
+    #111827;
+}
+
+.brand-mark::before,
+.brand-mark::after {
+  position: absolute;
+  content: "";
+  background: var(--chrome);
+}
+
+.brand-mark::before {
+  left: 9px;
+  right: 9px;
+  top: 14px;
+  height: 8px;
+  clip-path: polygon(0 0, 86% 0, 100% 100%, 8% 100%);
+}
+
+.brand-mark::after {
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  height: 5px;
+  box-shadow: 0 8px 0 rgba(215, 221, 229, 0.9);
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+h1 {
+  overflow: hidden;
+  font-size: 1.2rem;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand p,
+.state-pill span,
+.readout span,
+.notes-copy li,
+.transform-panel span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.state-pill {
+  display: grid;
+  min-width: 128px;
+  justify-items: end;
+  gap: 4px;
+}
+
+.state-pill strong {
+  font-size: 1rem;
+}
+
+.readout {
+  right: 18px;
+  top: 110px;
+  display: grid;
+  width: 204px;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.readout div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.readout div:last-child {
+  border-bottom: 0;
+}
+
+.readout strong {
+  color: var(--cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+.notes-panel {
+  left: 18px;
+  bottom: 108px;
+  display: grid;
+  width: min(390px, calc(100vw - 36px));
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab {
+  min-height: 38px;
+  border: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.09);
+  background: transparent;
+  cursor: pointer;
+}
+
+.tab:last-child {
+  border-right: 0;
+}
+
+.tab.active {
+  background: rgba(200, 50, 39, 0.27);
+}
+
+.notes-copy {
+  display: grid;
+  gap: 10px;
+  min-height: 172px;
+  padding: 14px;
+}
+
+.notes-copy h2 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.notes-copy ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.notes-copy li {
+  line-height: 1.55;
+}
+
+.transform-panel {
+  left: 50%;
+  bottom: 26px;
+  width: min(520px, calc(100vw - 36px));
+  padding: 12px 14px;
+  border-radius: 8px;
+  transform: translateX(-50%);
+}
+
+.transform-panel label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.transform-panel input {
+  width: 100%;
+  accent-color: var(--cyan);
+}
+
+.control-bar {
+  right: 18px;
+  bottom: 26px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(112px, 1fr));
+  gap: 8px;
+  width: min(700px, calc(100vw - 36px));
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.control-bar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.control-bar button.active,
+.control-bar button:hover {
+  border-color: rgba(105, 233, 255, 0.72);
+  background: rgba(105, 233, 255, 0.12);
+}
+
+.control-bar svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 940px) {
+  .top-hud {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    min-height: 66px;
+  }
+
+  .readout {
+    top: 88px;
+    right: 12px;
+    width: 172px;
+  }
+
+  .notes-panel {
+    left: 12px;
+    right: 12px;
+    bottom: 146px;
+    width: auto;
+  }
+
+  .control-bar {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    grid-template-columns: repeat(5, 1fr);
+    width: auto;
+  }
+
+  .transform-panel {
+    left: 12px;
+    right: 12px;
+    bottom: 76px;
+    width: auto;
+    transform: none;
+  }
+
+  .control-bar button {
+    min-height: 44px;
+  }
+
+  .control-bar button span {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  h1 {
+    font-size: 1rem;
+  }
+
+  .brand p {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .state-pill {
+    min-width: 86px;
+  }
+
+  .state-pill strong {
+    font-size: 0.82rem;
+  }
+
+  .readout {
+    top: 84px;
+    left: 12px;
+    right: auto;
+    width: 150px;
+    padding: 10px;
+  }
+
+  .readout div {
+    min-height: 26px;
+  }
+
+  .notes-panel {
+    bottom: 136px;
+  }
+
+  .notes-copy {
+    min-height: 142px;
+    max-height: 178px;
+    overflow: hidden;
+    padding: 12px;
+  }
+
+  .notes-copy li {
+    line-height: 1.42;
+  }
+
+  .tab {
+    min-height: 34px;
+  }
+}
